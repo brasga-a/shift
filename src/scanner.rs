@@ -44,22 +44,27 @@ impl Scanner {
         ')' => self.add_token(TokenType::RightParen),
         '{' => self.add_token(TokenType::LeftBrace),
         '}' => self.add_token(TokenType::RightBrace),
+        '[' => self.add_token(TokenType::LeftBracket),
+        ']' => self.add_token(TokenType::RightBracket),
         ',' => self.add_token(TokenType::Comma),
-        '.' => self.add_token(TokenType::Dot),
-        '-' => self.add_token(TokenType::Minus),
-        '+' => self.add_token(TokenType::Plus),
+        '?' => { self.add_token(TokenType::Question)},
+        ':' => self.add_token(TokenType::Colon),
         ';' => self.add_token(TokenType::Semicolon),
         '*' => self.add_token(TokenType::Star),
-        '!' => { if self.equal('=') { self.add_token(TokenType::BangEqual); } else { self.add_token(TokenType::Bang); }},
-        '=' => { if self.equal('=') { self.add_token(TokenType::EqualEqual); } else { self.add_token(TokenType::Equal); }},
-        '<' => { if self.equal('=') { self.add_token(TokenType::LessEqual); } else { self.add_token(TokenType::Less); }},
-        '>' => { if self.equal('=') { self.add_token(TokenType::GreaterEqual); } else { self.add_token(TokenType::Greater); }},
-        '/' => { if self.equal('/') { while self.peek() != '\n' && !self.is_at_end() { self.advance(); } } else { self.add_token(TokenType::Slash); }},
+        '.' => { if self.match_char('.') { if self.match_char('.') { self.add_token(TokenType::Spread); } else { self.add_token(TokenType::Range); }} else { self.add_token(TokenType::Dot)}},
+        '+' => { if self.match_char('+') { self.add_token(TokenType::Increment); } else { self.add_token(TokenType::Plus); }},
+        '-' => { if self.match_char('-') { self.add_token(TokenType::Decrement);} else if self.match_char('>') { self.add_token(TokenType::SimpleArrow); } else { self.add_token(TokenType::Minus); } },
+        '!' => { if self.match_char('=') { self.add_token(TokenType::BangEqual); } else { self.add_token(TokenType::Bang); }},
+        '=' => { if self.match_char('=') { self.add_token(TokenType::EqualEqual); } else if self.match_char('>') { self.add_token(TokenType::Arrow); } else { self.add_token(TokenType::Equal); }},
+        '<' => { if self.match_char('=') { self.add_token(TokenType::LessEqual); } else { self.add_token(TokenType::Less); }},
+        '>' => { if self.match_char('=') { self.add_token(TokenType::GreaterEqual); } else { self.add_token(TokenType::Greater); }},
+        '/' => { if self.match_char('/') { while self.peek() != '\n' && !self.is_at_end() { self.advance(); } } else if self.match_char('*') { self.scan_multiline_comment(); } else { self.add_token(TokenType::Slash); }},
+        '&' => { if self.match_char('&') { self.add_token(TokenType::And);} else { self.add_token(TokenType::BitAnd); }},
+        '|' => { if self.match_char('|') { self.add_token(TokenType::OrLogical);} else { self.add_token(TokenType::OrBitwise); }},
+        
         ' ' | '\r' | '\t' => {},
         '\n' => { self.line += 1; },
         '"' => { self.string(); },
-        '|' => { if self.equal('|') { self.add_token(TokenType::Or);} else { errors::error(self.line, "Unexpected character.") }},
-        'o' => { if self.equal('r') { self.add_token(TokenType::Or);}},
         _ => {
           if self.source[self.current].is_ascii_digit() { 
             self.number();
@@ -69,6 +74,30 @@ impl Scanner {
             errors::error(self.line, "Unexpected character.") 
           }
         },  
+    }
+  }
+
+  fn scan_multiline_comment(&mut self) {
+    let mut nest_level = 1;
+    
+    while nest_level > 0 && !self.is_at_end() {
+        if self.peek() == '/' && self.peek_next() == '*' {
+            // Achou /* aninhado
+            self.advance(); self.advance();
+            nest_level += 1;
+        } else if self.peek() == '*' && self.peek_next() == '/' {
+            // Achou */ fechando
+            self.advance(); self.advance();
+            nest_level -= 1;
+        } else {
+            if self.peek() == '\n' {
+                self.line += 1;
+            }
+            self.advance();
+        }
+    }
+    
+    if nest_level > 0 {
     }
   }
 
@@ -82,7 +111,7 @@ impl Scanner {
     c
   }
 
-  fn equal(&mut self, expected: char) -> bool {
+  fn match_char(&mut self, expected: char) -> bool {
     if self.is_at_end() {
       return false
     }
@@ -108,7 +137,43 @@ impl Scanner {
     }
 
     let text: String = self.source[self.start..self.current].iter().collect();
-    self.add_token(TokenType::Identifier(text));
+
+    let token_type = match text.as_str() {
+      
+      // Rust
+      "fn" | "function" => TokenType::Fn,
+      "if"             => TokenType::If,
+      "else"           => TokenType::Else,
+      "return"         => TokenType::Return,
+      "true"           => TokenType::True,
+      "false"          => TokenType::False,
+      "let"            => TokenType::Let,
+      "const"          => TokenType::Const,
+      "loop"           => TokenType::Loop,
+      "while"          => TokenType::While,
+      "for"            => TokenType::For,
+      "enum"           => TokenType::Enum,
+      "type"           => TokenType::Type,
+      "trait"          => TokenType::Trait, 
+      "match"          => TokenType::Match,
+
+      // Shift
+      "server"    => TokenType::Server,
+      "client"    => TokenType::Client,
+      "component" => TokenType::Component,
+      "signal"    => TokenType::Signal,
+      "derived"   => TokenType::Derived, 
+      "effect"    => TokenType::Effect, 
+      "prop"      => TokenType::Prop,
+      "import"    => TokenType::Import,
+      "export"    => TokenType::Export,
+      "from"      => TokenType::From,
+      "as"        => TokenType::As,
+
+      _ => TokenType::Identifier(text)
+    };
+
+    self.add_token(token_type);
   }
 
   fn string (&mut self) {
@@ -165,7 +230,7 @@ impl Scanner {
   fn add_token(&mut self, token_type: TokenType) {
     let text: String = self.source[self.start..self.current]
         .iter()
-        .collect();  // Vec<char> → String
+        .collect();  
     
     self.tokens.push(Token::new(
         token_type,

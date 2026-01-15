@@ -3,28 +3,71 @@ use std::fmt::Display;
 #[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
-    // Single-character tokens
-    LeftParen, RightParen, LeftBrace, RightBrace, LeftAngle, RightAngle,
-    Comma, Dot, Minus, Plus, Semicolon, Slash, Star,
+    // Punctuation Symbols (Single-char) / Símbolos de Pontuação (Caractere único) 
+    LeftParen, RightParen,      // ( )
+    LeftBrace, RightBrace,      // { }
+    LeftBracket, RightBracket,  // [ ] 
+    Comma, Question,            // , ?
+    Dot, Range, Spread,         // . .. ...
+    Colon, Semicolon,           // :  ;    
+
+    // Mathematical and Logical Operators / Operadores Matemáticos e Lógicos
+    Minus, Plus, Slash, Star, // -, +, /, *
     
-    // One or two character tokens
-    Bang, BangEqual,
-    Equal, EqualEqual,
-    Greater, GreaterEqual,
-    Less, LessEqual,
+    // Comparison and Assignment / Comparação e Atribuição
+    Bang, BangEqual,       // ! !=
+    Equal, EqualEqual,     // = ==
+    Greater, GreaterEqual, // > >=
+    Less, LessEqual,       // < <=
+    Arrow,                 // =>     
+    SimpleArrow,           // ->
     
-    // Literals
+    // Fast operations / Operações rapidas
+    Increment, // '++'
+    Decrement, // '--' 
+
+    // Logical Operators and Bitwise / Operadores Lógicos e Bitwise 
+    And,       // &&
+    BitAnd,    // &
+    OrLogical, // ||
+    OrBitwise, // |
+
+    // Literals / Literais
     Identifier(String), 
     String(String), 
     Integer(i64),
     Float(f64),
-    Boolean(bool),
 
-    // Keywords
-    And, Class, Else, False, Function, For, If, Nil, Or,
-    Print, Return, Super, This, True, While, Let, Const, Loop,
+    // -------- Keywords --------
+
+    // Modules / Modulos
+    Import, //import
+    Export, // export (pub in Rust)
+    From,   // from
+    As, // (import X as Y)
+
+    // Data Types / Tipos de Dados
+    Enum, // enum
+    Type, // type (alias)
+    Trait, // trait
+
+    // Fluxo
+    Match,
+
+    // Control Structures / Estruturas de Controle
+    If, Else, Return, While, For, Loop,
+
+    // Declarations / Declarações
+    Fn, Let, Const, Struct,
     
-    // Adicionar mais depois
+    // Const Values / Valores Constantes 
+    True, False, Null, 
+
+    // Asynchronous / Assíncrono
+    Async, Await,
+
+    // Shift Specific / Especificos do Shift
+    Component, Server, Client, Signal, Derived, Effect, Prop,
 
     Eof,
 }
