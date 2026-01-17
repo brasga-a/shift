@@ -21,6 +21,7 @@ pub fn error(line: usize, message: &str) {
     report(line, "", message);
 }
 
+
 //Printa o erro
 fn report(line: usize, locate: &str, message: &str){
     eprintln!("[line: {}] Error {}: {}", line, locate, message);

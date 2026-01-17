@@ -66,7 +66,7 @@ impl Scanner {
         '\n' => { self.line += 1; },
         '"' => { self.string(); },
         _ => {
-          if self.source[self.current].is_ascii_digit() { 
+          if c.is_ascii_digit() { 
             self.number();
           } else if c.is_alphabetic() || c == '_' {
             self.identifier();

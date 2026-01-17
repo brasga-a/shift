@@ -1,14 +1,20 @@
 mod scanner;
 mod token;
 mod errors;
-
+mod expr;
+mod parser;
+mod interpreter;
 
 use std::env;
 use std::fs;
 use std::io::{self, Write};
 use std::process;
 
+use crate::interpreter::Interpreter;
 use crate::scanner::Scanner;
+use crate::expr::{Expr, LiteralValue};
+use crate::token::{Token, TokenType};
+use crate::parser::Parser;
 
 
 fn main() {
@@ -22,13 +28,13 @@ fn main() {
     } else {
         run_prompt();
     }
-
 }
 
 fn run_file(path: &str){
-    let source = fs::read_to_string(path)
-        .expect("Failed to read file");
-    run(&source);
+    let source = fs::read_to_string(path).expect("Failed to read file");
+    let mut interpreter = Interpreter;
+
+    run(&mut interpreter, &source);
 
     if errors::had_error() {
         process::exit(65)
@@ -37,6 +43,8 @@ fn run_file(path: &str){
 }
 
 fn run_prompt() {
+    let mut interpreter = Interpreter;
+
     loop {
         print!("> ");
         io::stdout().flush().unwrap();
@@ -48,17 +56,28 @@ fn run_prompt() {
             break;
         }
 
-        run(&line);
+        run(&mut interpreter, &line);
         errors::reset_error();      
     }
 }
 
-fn run (source: &str) {
+fn run (interpreter: &mut Interpreter, source: &str) {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
+    let mut parser = Parser::new(tokens.clone());
 
-    for token in tokens {
-        println!("{:?}", token);
+    // DEBUG
+    // for token in &tokens {
+    //     println!("{:?}", token);
+    // }
+
+    match parser.parse() {
+        Ok(expression) => {
+            interpreter.interpret(&expression);
+        },
+        Err(error) => {
+            eprintln!("{}", error);
+        }
     }
 }
 
